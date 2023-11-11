@@ -22,17 +22,20 @@ def benchmark(GPU):
     :param str GPU: The GPU to benchmark.
     :return: time_delta, v_ram peak: Used to calculate the score.
     """
-    print("\n[ + ] Benchmarking GPU: " + GPU)
+    GPU_name = GPU.replace("/physical_device:", "")
+    print("\n[ + ] Benchmarking GPU: " + GPU_name)
     try:
         load_gpu(GPU)
     except RuntimeError as e:
         return "GPU not available.", "GPU not available."
+
 
     start_time = time.time()
     n_classes = 10
     n_samples = 3000000
     batch_size = n_samples // 20
     input_units = 100
+    n_epochs = 2
 
     model = tf.keras.Sequential([
         tf.keras.layers.InputLayer(input_shape=(input_units,)),
@@ -48,13 +51,13 @@ def benchmark(GPU):
     gtt = np.random.randint(0, n_classes, n_samples)
     dataset = tf.data.Dataset.from_tensor_slices((input, gtt)).batch(batch_size)
 
-    model.fit(dataset, epochs=10)
+    model.fit(dataset, epochs=n_epochs)
     end_time = time.time()
     td = str(datetime.timedelta(seconds=end_time - start_time)).split(":")
 
-    v_ram = tf.config.experimental.get_memory_info(GPU)
+    v_ram = tf.config.experimental.get_memory_info(GPU_name)
 
-    return td, v_ram.peak
+    return td, v_ram
 
 
 def get_gpus():
@@ -71,14 +74,18 @@ def load_gpu(GPU):
     """
     Checks if there is a GPU available and sets the memory growth to true for every available GPU.
 
-    :param str GPU: The GPU to load.
+    :param GPU:
     :return:
     """
+    gpus = tf.config.list_physical_devices("GPU")
 
-    try:
-        tf.config.experimental.set_memory_growth(GPU, True)
-    except RuntimeError as e:
-        print(e)
+    if gpus:
+        for gpu in gpus:
+            if gpu.name == GPU:
+                try:
+                    tf.config.experimental.set_memory_growth(gpu, True)
+                except RuntimeError as e:
+                    print(e)
 
 
 if __name__ == "__main__":
