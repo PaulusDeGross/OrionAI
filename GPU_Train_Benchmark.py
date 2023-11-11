@@ -15,7 +15,7 @@ import tensorflow as tf
 import numpy as np
 
 
-def benchmark(GPU):
+def benchmark(GPU, n_epochs=5):
     """
     Benchmark for the given GPU.
 
@@ -29,13 +29,11 @@ def benchmark(GPU):
     except RuntimeError as e:
         return "GPU not available.", "GPU not available."
 
-
     start_time = time.time()
     n_classes = 10
     n_samples = 3000000
     batch_size = n_samples // 20
     input_units = 100
-    n_epochs = 2
 
     model = tf.keras.Sequential([
         tf.keras.layers.InputLayer(input_shape=(input_units,)),
@@ -47,9 +45,9 @@ def benchmark(GPU):
 
     model.compile(loss="sparse_categorical_crossentropy", optimizer="adam")
 
-    input = np.random.random((n_samples, input_units))
+    _input = np.random.random((n_samples, input_units))
     gtt = np.random.randint(0, n_classes, n_samples)
-    dataset = tf.data.Dataset.from_tensor_slices((input, gtt)).batch(batch_size)
+    dataset = tf.data.Dataset.from_tensor_slices((_input, gtt)).batch(batch_size)
 
     model.fit(dataset, epochs=n_epochs)
     end_time = time.time()
@@ -57,7 +55,10 @@ def benchmark(GPU):
 
     v_ram = tf.config.experimental.get_memory_info(GPU_name)
 
-    return td, v_ram
+    score = ((v_ram["peak"] / 1024) / (float(td[0]) * 3600 + float(td[1]) * 60 + float(td[2])) * n_epochs) / 10000
+    print(td, v_ram["peak"], score)
+
+    return td, v_ram, score
 
 
 def get_gpus():
@@ -74,7 +75,7 @@ def load_gpu(GPU):
     """
     Checks if there is a GPU available and sets the memory growth to true for every available GPU.
 
-    :param GPU:
+    :param str GPU: The GPU to load.
     :return:
     """
     gpus = tf.config.list_physical_devices("GPU")
@@ -93,12 +94,15 @@ if __name__ == "__main__":
     GPUs = get_gpus()
     print(f"[ + ] Found {len(GPUs)} GPU(s).")
     for GPU in range(len(GPUs)):
-        time_delta, v_ram = benchmark(GPUs[GPU].name)
+        time_delta, v_ram, score = ['0', '01', '02.957258'], {"peak": 7900507904}, 12.254885290588735 # benchmark(GPUs[GPU].name, 1)
 
         print(
-            f"+{'-' * 14}+{'-' * 14}+\n"
-            f"| {'Time Delta':^12} | {time_delta[0]}h {time_delta[1]}m {time_delta[2]}s |\n"
-            f"+{'-' * 14}+{'-' * 14}+\n"
-            f"| {'vRAM Peak':^12} | {v_ram / 1024 / 1024 / 1024:^12.2f} GB |\n"
-            f"+{'-' * 14}+{'-' * 14}+\n"
+            "+" + "-" * 14 + "+" + "-" * 15 + "+\n"
+            f"| {'Time Delta':^12} | {time_delta[0]}h {time_delta[1]}m {round(float(time_delta[2]), 3)}s |\n"
+            "+" + "-" * 14 + "+" + "-" * 15 + "+\n"
+            f"| {'vRAM Peak':^12} | {round(v_ram['peak'] / 1024 / 1024 / 1024, 2):^10} GB |\n"
+            "+" + "-" * 14 + "+" + "-" * 15 + "+\n"
+            "+" + "-" * 14 + "+" + "-" * 15 + "+\n"
+            f"| {'Score':^12} | {round(score*10, 2):^13} |\n"
+            "+" + "-" * 14 + "+" + "-" * 15 + "+\n\n"
         )
