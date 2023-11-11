@@ -1,4 +1,8 @@
 import os
+import random
+
+import cv2
+from tqdm import tqdm
 
 '''
 Tensorflow log levels:
@@ -12,6 +16,8 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 import tensorflow as tf
 import pathlib
+import matplotlib.pyplot as plt
+import numpy as np
 
 TRAINING = "training"
 VALIDATION = "validation"
@@ -50,32 +56,38 @@ def load_dataset(
     :param float validation_split: The percentage of the dataset to use for validation. (Training Subset: (1 - validation_split) * dataset, Validation Subset: validation_split * dataset)
     :param str subset: subset of the dataset to load. Either "training" or "validation".
     :param str path: The path to the dataset.
-    :return: The dataset.
+    :return: dataset
     """
     path = pathlib.Path(path)
 
     n_dataset = len(list(path.glob("*/*")))
     n_validation = int(n_dataset * validation_split) if subset == TRAINING else (1 - validation_split) * n_dataset
 
-    print(f"+{'-' * 14}+{'-' * 14}+\n"
-          f"| {'Dataset':^12} | {n_dataset:^12} |\n"
-          f"+{'-' * 14}+{'-' * 14}+\n"
-          f"| {'Validation':^12} | {n_validation:^12} |\n"
-          f"+{'-' * 14}+{'-' * 14}+\n"
-          f"| {'Batch Size':^12} | {batch_size:^12} |\n"
-          f"+{'-' * 14}+{'-' * 14}+\n"
-          f"| {'Image Width':^12} | {f'{img_width} px':^12} |\n"
-          f"+{'-' * 14}+{'-' * 14}+\n"
-          f"| {'Image Height':^12} | {f'{img_height} px':^12} |\n"
-          f"+{'-' * 14}+{'-' * 14}+\n")
+    print(
+        f"\n+{'-' * 14}+{'-' * 14}+\n"
+        f"| {'Dataset':^12} | {n_dataset:^12} |\n"
+        f"+{'-' * 14}+{'-' * 14}+\n"
+        f"| {'Validation':^12} | {int(n_validation):^12} |\n"
+        f"+{'-' * 14}+{'-' * 14}+\n"
+        f"| {'Batch Size':^12} | {batch_size:^12} |\n"
+        f"+{'-' * 14}+{'-' * 14}+\n"
+        f"| {'Image Width':^12} | {f'{img_width} px':^12} |\n"
+        f"+{'-' * 14}+{'-' * 14}+\n"
+        f"| {'Image Height':^12} | {f'{img_height} px':^12} |\n"
+        f"+{'-' * 14}+{'-' * 14}+\n"
+    )
 
     dataset = tf.keras.preprocessing.image_dataset_from_directory(
         path,
         validation_split=validation_split,
         subset=subset,
-        seed=123,
+        seed=42,
         image_size=(img_height, img_width),
         batch_size=batch_size
     )
 
     return dataset
+
+
+train_dataset = load_dataset("dataset/train", subset=TRAINING)
+
