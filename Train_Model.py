@@ -18,6 +18,7 @@ import tensorflow as tf
 import pathlib
 import matplotlib.pyplot as plt
 import numpy as np
+from Model import *
 
 TRAINING = "training"
 VALIDATION = "validation"
@@ -35,6 +36,7 @@ def set_gpu():
         try:
             for gpu in gpus:
                 tf.config.experimental.set_memory_growth(gpu, True)
+                print("Using GPU: " + gpu.name)
         except RuntimeError as e:
             print(e)
 
@@ -75,6 +77,8 @@ def load_dataset(
         f"+{'-' * 14}+{'-' * 14}+\n"
         f"| {'Image Height':^12} | {f'{img_height} px':^12} |\n"
         f"+{'-' * 14}+{'-' * 14}+\n"
+        f"| {'Shape':^12} | {'(None, 480, 640, 3)':^12} |\n"
+        f"+{'-' * 14}+{'-' * 14}+\n"
     )
 
     dataset = tf.keras.preprocessing.image_dataset_from_directory(
@@ -89,5 +93,25 @@ def load_dataset(
     return dataset
 
 
-train_dataset = load_dataset("dataset/train", subset=TRAINING)
+set_gpu()
 
+train_dataset = load_dataset("dataset/train", subset=TRAINING, batch_size=16).shuffle(1000)
+test_dataset = load_dataset("dataset/test", subset=VALIDATION, batch_size=16).shuffle(1000)
+
+model = model()
+
+model.compile(
+    optimizer="adam",
+    loss=tf.keras.losses.sparse_categorical_crossentropy,
+    metrics=["accuracy"]
+)
+
+history = model.fit(
+    train_dataset,
+    epochs=3
+)
+
+model.save("benchmark_model.h5")
+
+plt.plot(history.history["accuracy"], label="accuracy")
+plt.show()
