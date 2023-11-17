@@ -1,3 +1,5 @@
+# TODO: Rewrite this file to use PyTorch ROCm instead of Tensorflow
+
 import os
 import pathlib
 import random
