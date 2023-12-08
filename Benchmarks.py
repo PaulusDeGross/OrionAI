@@ -1,4 +1,5 @@
-import time, datetime
+import time
+import datetime
 import os
 
 '''
@@ -13,6 +14,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 import tensorflow as tf
 import numpy as np
+from Model import set_gpu
 
 
 class Benchmark:
@@ -29,12 +31,9 @@ class Benchmark:
         self.use_gpu = use_gpu
 
         if self.use_gpu:
-            self.set_gpu()
+            set_gpu()
 
         self.batch_size_benchmark()
-
-    def set_gpu(self):
-        print("Setting GPU...")
 
     def batch_size_benchmark(self, batch_sizes=[1, 2, 4, 8, 16, 32, 64, 128, 256]):
         """
@@ -54,3 +53,10 @@ class Benchmark:
             print("Time elapsed: " + str(datetime.timedelta(seconds=end_time - start_time)))
             print("")
 
+        print("Batch size benchmark finished.")
+        for(batch_size, _time) in zip(batch_sizes, times):
+            print(f"Batch size: {batch_size}, Time: {_time}")
+
+
+    def train_model(self, batch_size=32):
+        pass

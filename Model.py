@@ -22,6 +22,10 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 
+def set_gpu(self):
+    print("Setting GPU...")
+
+
 def model():
     """
     Creates the model.
